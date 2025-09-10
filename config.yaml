@@ -1,0 +1,71 @@
+app:
+  name: "integration-education-db"
+  version: "1.0.0"
+  env: "development"
+
+server:
+  port: 8180
+  read_timeout: 30s
+  write_timeout: 30s
+  shutdown_timeout: 10s
+
+database:
+  host: mysql
+  port: 8306
+  user: root
+  password: rootpassword
+  name: grades_db
+  charset: utf8mb4
+  parse_time: true
+  loc: UTC
+  max_connections: 100
+  max_idle_connections: 10
+  connection_lifetime: 1h
+
+redis:
+  host: redis
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 100
+  ingestion_queue: "grades:ingestion"
+  sync_queue: "grades:sync"
+  dlq_suffix: ":dlq"
+
+storage:
+  s3:
+    endpoint: "http://minio:9000"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    bucket: "grades-bucket"
+    region: "us-east-1"
+    use_ssl: false
+
+external_api:
+  education_dept:
+    base_url: "http://"
+    auth_endpoint: "/auth/token"
+    grades_endpoint: "/grades/batch"
+    username: "system_user"
+    password: "secure_password"
+    token_expires: 300s
+    batch_size: 100
+    retry_attempts: 3
+    retry_delay: 2s
+
+workers:
+  ingestion:
+    count: 5
+    batch_size: 10
+  sync:
+    count: 3
+    batch_size: 50
+
+sync_window:
+  start_time: "08:00"
+  end_time: "18:00"
+  timezone: "UTC"
+
+logging:
+  level: "info"
+  format: "json"

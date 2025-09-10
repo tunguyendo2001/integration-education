@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: grades_db
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    ports:
+      - "8306:3306"
+    volumes:
+      - /tmp/mysql_data:/var/lib/mysql
+      - ./internal/db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    command: --default-authentication-plugin=mysql_native_password
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /tmp/minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  api:
+    build: .
+    command: ./api
+    ports:
+      - "8180:8080"
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  ingestion-worker:
+    build: .
+    command: ./ingestion-worker
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+
+  sync-worker:
+    build: .
+    command: ./sync-worker
+    environment:
+      - CONFIG_PATH=/app/config.yaml
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 1
