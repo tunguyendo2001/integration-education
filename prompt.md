@@ -52,6 +52,10 @@ Generate a **production-ready Golang project** with the following requirements:
 
 * Language: **Golang 1.22+**.
 * Project structure must follow **clean architecture / layered design**.
+* Problem must solved:
+   * Transaction when do upload and sync, ensures that it must be successful at all or rollback-able | notify user the status of the process.
+   * Make sure that the processing time when syncing data is completed before the token/login expires.
+
 * Must include:
 
   * `cmd/` → entrypoints for ingestion worker, sync worker.
