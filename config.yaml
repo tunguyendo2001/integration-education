@@ -43,12 +43,14 @@ storage:
 
 external_api:
   education_dept:
-    base_url: "http://"
+    base_url: "https://api.education.gov"
     auth_endpoint: "/auth/token"
     grades_endpoint: "/grades/batch"
+    semester_permission_endpoint: "/api/semester-schedules/check-permission"
     username: "system_user"
     password: "secure_password"
     token_expires: 300s
+    timeout: 30s
     batch_size: 100
     retry_attempts: 3
     retry_delay: 2s

@@ -21,7 +21,7 @@ flowchart TD
         L[DLQ]
         M[Error Logging & Notification]
     end
-    F -.-> K
+    %% F -.-> K
     I -.-> K
     K -.-> L
     L -.-> M
