@@ -57,7 +57,7 @@ external_api:
 
 workers:
   ingestion:
-    count: 5
+    count: 0
     batch_size: 10
   sync:
     count: 3

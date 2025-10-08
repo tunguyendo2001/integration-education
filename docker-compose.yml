@@ -6,14 +6,18 @@ services:
     container_name: integration_mysql
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: grades_db
+      MYSQL_USER: localmysql
+      MYSQL_PASSWORD: localmysql
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: education_local
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
     ports:
       - "8306:3306"
     volumes:
-      - /tmp/integration_mysql:/var/lib/mysql
-      - ./internal/db/migrations:/docker-entrypoint-initdb.d
+      - ../integration_mysql:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/conf:/etc/mysql/conf.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
       interval: 10s
@@ -43,7 +47,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - /tmp/integration_minio:/data
+      - ../integration_minio:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s

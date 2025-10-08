@@ -1,0 +1,33 @@
+[mysql]
+default-character-set = utf8mb4
+
+[mysqld]
+# Character set configuration
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+init_connect = 'SET NAMES utf8mb4'
+
+# Performance tuning
+max_connections = 200
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 1
+innodb_lock_wait_timeout = 120
+
+# Security settings
+bind-address = 0.0.0.0
+skip-name-resolve
+
+# Logging
+general_log = 1
+general_log_file = /var/lib/mysql/mysql.log
+log_error = /var/lib/mysql/error.log
+slow_query_log = 1
+slow_query_log_file = /var/lib/mysql/slow.log
+long_query_time = 2
+
+# SQL Mode
+sql_mode = STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO
+
+# Time zone
+default-time-zone = '+07:00'

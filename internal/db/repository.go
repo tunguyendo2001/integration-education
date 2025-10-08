@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"integration-education-db/internal/model"
 )
@@ -98,8 +97,8 @@ func (r *repository) UpdateGradesStatus(ctx context.Context, ids []int64, status
 		return nil
 	}
 
-	query := fmt.Sprintf(`UPDATE grades_staging SET status = $1, error_message = $2, updated_at = NOW() 
-						  WHERE id = ANY($3)`)
+	query := `UPDATE grades_staging SET status = $1, error_message = $2, updated_at = NOW() 
+						  WHERE id = ANY($3)`
 
 	_, err := r.db.ExecContext(ctx, query, status, errorMessage, ids)
 	return err
