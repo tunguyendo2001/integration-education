@@ -14,7 +14,7 @@ database:
   port: 8306
   user: root
   password: rootpassword
-  name: grades_db
+  name: education_local
   charset: utf8mb4
   parse_time: true
   loc: UTC
@@ -57,16 +57,15 @@ external_api:
 
 workers:
   ingestion:
-    count: 0
+    count: 0  # Disabled
     batch_size: 10
   sync:
     count: 3
     batch_size: 50
-
-sync_window:
-  start_time: "08:00"
-  end_time: "18:00"
-  timezone: "UTC"
+  pull:
+    count: 1
+    interval: 24h  # Run once per day
+    run_on_start: true  # Run immediately on startup
 
 logging:
   level: "info"

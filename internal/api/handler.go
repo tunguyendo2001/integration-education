@@ -61,7 +61,7 @@ func (h *Handler) TriggerSync(c *gin.Context) {
 	}
 
 	// Check sync window
-	withinWindow, err := h.syncService.IsWithinSyncWindow()
+	withinWindow, err := h.syncService.CheckSyncPermission(c, req.Class, req.Semester, req.Year)
 	if err != nil {
 		h.log.Error().Err(err).Msg("Failed to check sync window")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})

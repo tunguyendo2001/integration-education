@@ -15,6 +15,9 @@ type Repository interface {
 	UpdateGradesStatus(ctx context.Context, ids []int64, status model.GradeStatus, errorMessage *string) error
 	GetGradesStatus(ctx context.Context, fileID int64) (*model.StatusResponse, error)
 	GetReadyGrades(ctx context.Context, fileID int64, class, subject string, limit int) ([]model.GradeStaging, error)
+	UpsertStudent(ctx context.Context, student *model.ServerStudent) error
+	UpsertClass(ctx context.Context, class *model.ServerClass) error
+	UpsertTeacher(ctx context.Context, teacher *model.ServerTeacher) error
 }
 
 type repository struct {
@@ -166,4 +169,92 @@ func (r *repository) GetReadyGrades(ctx context.Context, fileID int64, class, su
 	}
 
 	return grades, nil
+}
+
+// UpsertTeacher inserts or updates teacher from server
+func (r *repository) UpsertTeacher(ctx context.Context, teacher *model.ServerTeacher) error {
+	query := `
+		INSERT INTO teachers (
+			id, name, email, username, gender, hometown, birthday, 
+			is_active, synced_from_server_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+		ON DUPLICATE KEY UPDATE
+			name = VALUES(name),
+			email = VALUES(email),
+			username = VALUES(username),
+			gender = VALUES(gender),
+			hometown = VALUES(hometown),
+			birthday = VALUES(birthday),
+			is_active = VALUES(is_active),
+			synced_from_server_at = NOW(),
+			updated_at = NOW()
+	`
+
+	_, err := r.db.ExecContext(ctx, query,
+		teacher.ID,
+		teacher.Name,
+		teacher.Email,
+		teacher.Username,
+		teacher.Gender,
+		teacher.Hometown,
+		teacher.Birthday,
+		teacher.IsActive,
+	)
+
+	return err
+}
+
+// UpsertStudent inserts or updates student from server
+func (r *repository) UpsertStudent(ctx context.Context, student *model.ServerStudent) error {
+	query := `
+		INSERT INTO students (
+			id, name, gender, hometown, birth_date, synced_from_server_at
+		) VALUES (?, ?, ?, ?, ?, NOW())
+		ON DUPLICATE KEY UPDATE
+			name = VALUES(name),
+			gender = VALUES(gender),
+			hometown = VALUES(hometown),
+			birth_date = VALUES(birth_date),
+			synced_from_server_at = NOW(),
+			updated_at = NOW()
+	`
+
+	_, err := r.db.ExecContext(ctx, query,
+		student.ID,
+		student.Name,
+		student.Gender,
+		student.Hometown,
+		student.Birthday,
+	)
+
+	return err
+}
+
+// UpsertClass inserts or updates class from server
+func (r *repository) UpsertClass(ctx context.Context, class *model.ServerClass) error {
+	query := `
+		INSERT INTO classes (
+			id, name, grade, school_year, semester, subject, is_active
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			name = VALUES(name),
+			grade = VALUES(grade),
+			school_year = VALUES(school_year),
+			semester = VALUES(semester),
+			subject = VALUES(subject),
+			is_active = VALUES(is_active),
+			updated_at = NOW()
+	`
+
+	_, err := r.db.ExecContext(ctx, query,
+		class.ID,
+		class.Name,
+		class.GradeLevel,
+		class.AcademicYear,
+		class.Semester,
+		class.Subject,
+		class.IsActive,
+	)
+
+	return err
 }

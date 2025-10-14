@@ -15,45 +15,86 @@ import (
 )
 
 type Service struct {
-	cfg    *config.Config
-	repo   db.Repository
-	client *Client
-	log    zerolog.Logger
+	cfg               *config.Config
+	repo              db.Repository
+	client            *Client
+	permissionChecker *PermissionChecker
+	log               zerolog.Logger
 }
 
 func NewService(cfg *config.Config, repo db.Repository) *Service {
 	return &Service{
-		cfg:    cfg,
-		repo:   repo,
-		client: NewClient(cfg),
-		log:    logger.Get(),
+		cfg:               cfg,
+		repo:              repo,
+		client:            NewClient(cfg),
+		permissionChecker: NewPermissionChecker(cfg),
+		log:               logger.Get(),
 	}
 }
 
-func (s *Service) IsWithinSyncWindow() (bool, error) {
-	now := time.Now()
-	location, err := time.LoadLocation(s.cfg.SyncWindow.Timezone)
+// CheckSyncPermission checks if sync is allowed via API endpoint
+func (s *Service) CheckSyncPermission(ctx context.Context, className string, semester string, year int) (bool, error) {
+	s.log.Debug().
+		Str("class", className).
+		Str("semester", semester).
+		Int("year", year).
+		Msg("Checking sync permission via API")
+
+	isAllowed, resp, err := s.permissionChecker.CheckPermission(ctx, className, semester, year)
 	if err != nil {
-		return false, fmt.Errorf("invalid timezone: %w", err)
+		s.log.Error().Err(err).Msg("Failed to check permission")
+		return false, fmt.Errorf("permission check failed: %w", err)
 	}
 
-	nowInTZ := now.In(location)
+	if !isAllowed {
+		schedule := resp.GetActiveSchedule()
+		if schedule != nil {
+			if schedule.Locked {
+				s.log.Warn().
+					Str("class", className).
+					Str("semester", semester).
+					Int("year", year).
+					Msg("Schedule is locked")
+				return false, nil
+			}
 
-	startTime, err := time.Parse("15:04", s.cfg.SyncWindow.StartTime)
-	if err != nil {
-		return false, fmt.Errorf("invalid start time format: %w", err)
+			if !schedule.Active {
+				s.log.Warn().
+					Str("class", className).
+					Str("semester", semester).
+					Int("year", year).
+					Msg("Schedule is not active")
+				return false, nil
+			}
+
+			// Check if current time is within schedule window
+			now := time.Now()
+			if now.Before(schedule.StartDateTime) || now.After(schedule.EndDateTime) {
+				s.log.Warn().
+					Str("class", className).
+					Time("now", now).
+					Time("start", schedule.StartDateTime).
+					Time("end", schedule.EndDateTime).
+					Msg("Current time is outside schedule window")
+				return false, nil
+			}
+		} else {
+			s.log.Warn().
+				Str("class", className).
+				Str("semester", semester).
+				Int("year", year).
+				Msg("No active schedule found")
+			return false, nil
+		}
 	}
 
-	endTime, err := time.Parse("15:04", s.cfg.SyncWindow.EndTime)
-	if err != nil {
-		return false, fmt.Errorf("invalid end time format: %w", err)
-	}
+	s.log.Info().
+		Str("class", className).
+		Str("semester", semester).
+		Int("year", year).
+		Msg("Sync permission granted")
 
-	currentTime := nowInTZ.Format("15:04")
-	startTimeStr := startTime.Format("15:04")
-	endTimeStr := endTime.Format("15:04")
-
-	return currentTime >= startTimeStr && currentTime <= endTimeStr, nil
+	return true, nil
 }
 
 func (s *Service) ProcessSyncJob(ctx context.Context, job model.SyncJob) error {
@@ -65,15 +106,21 @@ func (s *Service) ProcessSyncJob(ctx context.Context, job model.SyncJob) error {
 
 	log.Info().Msg("Processing sync job")
 
-	// Check sync window
-	withinWindow, err := s.IsWithinSyncWindow()
+	// Extract year and semester from job (you might need to get this from file or grades)
+	// For now, assuming you have a way to determine these
+	// You might need to add Year and Semester fields to SyncJob
+	year := job.Year
+	semester := job.Semester
+
+	// Check sync permission via API
+	allowed, err := s.CheckSyncPermission(ctx, job.Class, semester, year)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to check sync window")
+		log.Error().Err(err).Msg("Failed to check sync permission")
 		return err
 	}
 
-	if !withinWindow {
-		log.Warn().Msg("Sync attempted outside allowed window")
+	if !allowed {
+		log.Warn().Msg("Sync not allowed for this class/semester/year")
 		return errors.ErrSyncWindowClosed
 	}
 

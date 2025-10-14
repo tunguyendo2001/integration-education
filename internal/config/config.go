@@ -16,7 +16,7 @@ type Config struct {
 	Storage     StorageConfig     `yaml:"storage"`
 	ExternalAPI ExternalAPIConfig `yaml:"external_api"`
 	Workers     WorkersConfig     `yaml:"workers"`
-	SyncWindow  SyncWindowConfig  `yaml:"sync_window"`
+	SyncWindow  SyncWindowConfig  `yaml:"sync_window"` // Deprecated
 	Logging     LoggingConfig     `yaml:"logging"`
 }
 
@@ -76,20 +76,23 @@ type ExternalAPIConfig struct {
 }
 
 type EducationDeptConfig struct {
-	BaseURL        string        `yaml:"base_url"`
-	AuthEndpoint   string        `yaml:"auth_endpoint"`
-	GradesEndpoint string        `yaml:"grades_endpoint"`
-	Username       string        `yaml:"username"`
-	Password       string        `yaml:"password"`
-	TokenExpires   time.Duration `yaml:"token_expires"`
-	BatchSize      int           `yaml:"batch_size"`
-	RetryAttempts  int           `yaml:"retry_attempts"`
-	RetryDelay     time.Duration `yaml:"retry_delay"`
+	BaseURL                    string        `yaml:"base_url"`
+	AuthEndpoint               string        `yaml:"auth_endpoint"`
+	GradesEndpoint             string        `yaml:"grades_endpoint"`
+	SemesterPermissionEndpoint string        `yaml:"semester_permission_endpoint"`
+	Username                   string        `yaml:"username"`
+	Password                   string        `yaml:"password"`
+	TokenExpires               time.Duration `yaml:"token_expires"`
+	Timeout                    time.Duration `yaml:"timeout"`
+	BatchSize                  int           `yaml:"batch_size"`
+	RetryAttempts              int           `yaml:"retry_attempts"`
+	RetryDelay                 time.Duration `yaml:"retry_delay"`
 }
 
 type WorkersConfig struct {
 	Ingestion IngestionWorkerConfig `yaml:"ingestion"`
 	Sync      SyncWorkerConfig      `yaml:"sync"`
+	Pull      PullWorkerConfig      `yaml:"pull"`
 }
 
 type IngestionWorkerConfig struct {
@@ -102,6 +105,13 @@ type SyncWorkerConfig struct {
 	BatchSize int `yaml:"batch_size"`
 }
 
+type PullWorkerConfig struct {
+	Count      int           `yaml:"count"`
+	Interval   time.Duration `yaml:"interval"`
+	RunOnStart bool          `yaml:"run_on_start"`
+}
+
+// Deprecated: Use SemesterPermissionEndpoint instead
 type SyncWindowConfig struct {
 	StartTime string `yaml:"start_time"`
 	EndTime   string `yaml:"end_time"`
