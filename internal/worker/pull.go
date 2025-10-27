@@ -16,7 +16,7 @@ type PullWorker struct {
 	cfg         *config.Config
 	repo        db.Repository
 	pullService *pull.Service
-	ticker      *time.Ticker
+	timer       *time.Timer
 	log         zerolog.Logger
 }
 
@@ -49,14 +49,14 @@ func (w *PullWorker) Start(ctx context.Context) error {
 
 	// Setup ticker for daily pulls at end of day
 	duration := time.Until(nextRun)
-	w.ticker = time.NewTimer(duration)
+	w.timer = time.NewTimer(duration)
 
 	for {
 		select {
 		case <-ctx.Done():
 			w.log.Info().Msg("Pull worker context cancelled")
 			return ctx.Err()
-		case <-w.ticker.C:
+		case <-w.timer.C:
 			w.log.Info().Msg("Starting scheduled pull")
 			if err := w.pullAll(ctx); err != nil {
 				w.log.Error().Err(err).Msg("Scheduled pull failed")
@@ -65,15 +65,15 @@ func (w *PullWorker) Start(ctx context.Context) error {
 			// Schedule next run (end of next day)
 			nextRun = w.getNextRunTime()
 			w.log.Info().Time("next_run", nextRun).Msg("Scheduled next pull")
-			w.ticker.Reset(time.Until(nextRun))
+			w.timer.Reset(time.Until(nextRun))
 		}
 	}
 }
 
 func (w *PullWorker) Stop() {
 	w.log.Info().Msg("Stopping pull worker")
-	if w.ticker != nil {
-		w.ticker.Stop()
+	if w.timer != nil {
+		w.timer.Stop()
 	}
 }
 

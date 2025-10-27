@@ -10,10 +10,10 @@ server:
   shutdown_timeout: 10s
 
 database:
-  host: mysql
+  host: 127.0.0.1
   port: 8306
-  user: root
-  password: rootpassword
+  user: localmysql
+  password: localmysql
   name: education_local
   charset: utf8mb4
   parse_time: true
@@ -34,7 +34,7 @@ redis:
 
 storage:
   s3:
-    endpoint: "http://minio:9000"
+    endpoint: "http://127.0.0.1:9000"
     access_key: "minioadmin"
     secret_key: "minioadmin"
     bucket: "grades-bucket"
@@ -43,7 +43,7 @@ storage:
 
 external_api:
   education_dept:
-    base_url: "http://api.education.gov"
+    base_url: "http://api.education.gov:8080"
     auth_endpoint: "/auth/token"
     grades_endpoint: "/api/scores"
     semester_permission_endpoint: "/api/semester-schedules/check-permission"
